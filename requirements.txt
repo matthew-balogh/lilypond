@@ -1,1 +1,4 @@
 pytest
+minisom
+matplotlib
+numpy
