@@ -58,6 +58,17 @@ class Pond:
         self.raided_ = True
         if self.verb: print("Pond has been raided.")
 
+        self.style_raid_marker()
+
+        return self
+    
+    def style_raid_marker(self, marker="^", size_base=15, color="red", opacity=.9):
+        assert hasattr(self, "raided_") and self.raided_, "Pond has not yet been raided."
+        self.raid_marker_marker_ = marker
+        self.raid_marker_size_base_ = size_base
+        self.raid_marker_color_ = color
+        self.raid_marker_opacity_ = opacity
+
         return self
 
     def visualize(self, ax=None, title=None,
@@ -138,7 +149,9 @@ class Pond:
         
         if hasattr(self, "raided_") and self.raidwinmap_ is not None:
             for (x, y), points in self.raidwinmap_.items():
-                ax.scatter(x, y, color="red", s=len(points)*15, marker="^", zorder=10)
+                ax.scatter(x, y,
+                           color=self.raid_marker_color_, s=self.raid_marker_size_base_ * len(points), marker=self.raid_marker_marker_,
+                           alpha=self.raid_marker_opacity_, zorder=10)
 
         if self.verb: print(f"Pond is visualized.")
 
