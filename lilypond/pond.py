@@ -44,6 +44,15 @@ class Pond:
 
         return self
 
+    def raid(self, data_abnormal):
+        raidwinmap = self.som.win_map(data_abnormal)
+        self.raidwinmap_ = raidwinmap
+
+        self.raided_ = True
+        if self.verb: print("Pond has been raided.")
+
+        return self
+
     def visualize(self, ax=None, title=None,
                   petal_color="white", petal_magnifier=3, petal_width=1, petal_min_gap_fraction=.25, hide_petals=False,
                   pad_min_gap_fraction=.25):
@@ -120,6 +129,9 @@ class Pond:
                                             petal_magnifier, petal_min_gap_fraction,
                                             pixel_width, petal_width, petal_color, self.underwater_opacity_, ax)
         
+        if hasattr(self, "raided_") and self.raidwinmap_ is not None:
+            for (x, y), points in self.raidwinmap_.items():
+                ax.scatter(x, y, color="red", s=len(points)*15, marker="^", zorder=10)
 
         if self.verb: print(f"Pond is visualized.")
 
