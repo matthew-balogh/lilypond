@@ -44,7 +44,7 @@ class Pond:
         return self
 
     def visualize(self, ax=None, title=None,
-                  petal_color="white", petal_magnifier=3, petal_width=1, petal_min_gap_fraction=.25,
+                  petal_color="white", petal_magnifier=3, petal_width=1, petal_min_gap_fraction=.25, hide_petals=False,
                   pad_min_gap_fraction=.25):
         assert hasattr(self, "settled_") and self.settled_ is True, "The pond has not settled yet. Call `settle()` first."
 
@@ -83,10 +83,11 @@ class Pond:
             ax.scatter(x_coords, y_coords, color="mediumseagreen", s=marker_sizes.T, alpha=1, marker="8")
 
             # petals
-            for i, j in np.ndindex(hitmapShape):
-                self.__place_petals(j, i, self.hitmap_[i, j],
-                                    petal_magnifier, petal_min_gap_fraction,
-                                    pixel_width, petal_width, petal_color, 1, ax)
+            if not hide_petals:
+                for i, j in np.ndindex(hitmapShape):
+                    self.__place_petals(j, i, self.hitmap_[i, j],
+                                        petal_magnifier, petal_min_gap_fraction,
+                                        pixel_width, petal_width, petal_color, 1, ax)
 
 
         elif hasattr(self, 'flood_below_activations_'):
@@ -98,11 +99,12 @@ class Pond:
             hit_mask_2d = hit_mask.reshape(self.hitmap_.T.shape).T
 
             # petals
-            for i, j in np.ndindex(hitmapShape):
-                if hit_mask_2d[i, j]:
-                    self.__place_petals(j, i, self.hitmap_[i, j],
-                                        petal_magnifier, petal_min_gap_fraction,
-                                        pixel_width, petal_width, petal_color, 1, ax)
+            if not hide_petals:
+                for i, j in np.ndindex(hitmapShape):
+                    if hit_mask_2d[i, j]:
+                        self.__place_petals(j, i, self.hitmap_[i, j],
+                                            petal_magnifier, petal_min_gap_fraction,
+                                            pixel_width, petal_width, petal_color, 1, ax)
 
             marker_sizes_filt = marker_sizes.T.flatten()[~hit_mask]
             ax.scatter(x_coords[~hit_mask], y_coords[~hit_mask], color="mediumseagreen", s=marker_sizes_filt.T, alpha=self.underwater_opacity_, marker="8")
@@ -110,11 +112,12 @@ class Pond:
             hit_mask_2d = ~hit_mask.reshape(self.hitmap_.T.shape).T
 
             # petals
-            for i, j in np.ndindex(hitmapShape):
-                if hit_mask_2d[i, j]:
-                    self.__place_petals(j, i, self.hitmap_[i, j],
-                                        petal_magnifier, petal_min_gap_fraction,
-                                        pixel_width, petal_width, petal_color, self.underwater_opacity_, ax)
+            if not hide_petals:
+                for i, j in np.ndindex(hitmapShape):
+                    if hit_mask_2d[i, j]:
+                        self.__place_petals(j, i, self.hitmap_[i, j],
+                                            petal_magnifier, petal_min_gap_fraction,
+                                            pixel_width, petal_width, petal_color, self.underwater_opacity_, ax)
         
 
         if self.verb: print(f"Pond is visualized.")
