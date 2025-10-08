@@ -16,6 +16,13 @@ class Pond:
         if self.verb: print("Pond is created.")
 
     def settle(self):
+        if hasattr(self, "settled_"):
+            del self.settled_
+        if hasattr(self, "raided_"):
+            del self.raided_
+        if hasattr(self, "flooded_"):
+            del self.flooded_
+
         hitmap = self.som.activation_response(self.data).astype(int)
         distmap = self.som.distance_map(scaling=self.som_distance_scaling)
         lattice_shape = hitmap.shape
