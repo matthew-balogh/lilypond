@@ -1,4 +1,5 @@
 pytest
 minisom
 matplotlib
+plotly
 numpy
