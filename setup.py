@@ -10,7 +10,10 @@ setup(
     author_email='matebalogh@inf.elte.hu',
     packages=find_packages(),
     install_requires=[
-        "pytest"
+        "pytest",
+        "numpy",
+        "matplotlib",
+        "minisom",
     ],
     license='Apache 2.0',
     python_requires='>=3.7',
