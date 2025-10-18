@@ -132,9 +132,9 @@ class Pond:
             x2 = cx + length * np.cos(rad)
             y2 = cy + length * np.sin(rad)
 
-            ax.plot([x1, x2], [y1, y2], color=self.petal_color_, linewidth=self.petal_width_, alpha=1, solid_capstyle='round', zorder=3)
+            ax.plot([x1, x2], [y1, y2], color=self.petal_color_, linewidth=self.petal_width_, alpha=opacity, solid_capstyle='round', zorder=3)
 
-        center_dot = plt.Circle((cx, cy), length * 0.1, color="#FFC800", zorder=6, alpha=1)
+        center_dot = plt.Circle((cx, cy), length * 0.1, color="#FFC800", zorder=6, alpha=opacity)
         ax.add_patch(center_dot)
 
     def __style(self):
