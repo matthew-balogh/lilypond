@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pylab as plt
 
 from lilypond.basin import Basin
+
 class Pond:
 
     def __init__(self, basin: Basin, verb=False):
@@ -32,7 +33,25 @@ class Pond:
         
         self.flood_styled_ = True
         return self
+    
+    def style_attract(self, marker="3", size_base=15, color="black", opacity=.9):
+        self.attract_marker_marker_ = marker
+        self.attract_marker_size_base_ = size_base
+        self.attract_marker_color_ = color
+        self.attract_marker_opacity_ = opacity
 
+        self.attract_styled_ = True
+        return self
+
+    def style_raid(self, marker="^", size_base=15, color="black", opacity=.9):
+        self.raid_marker_marker_ = marker
+        self.raid_marker_size_base_ = size_base
+        self.raid_marker_color_ = color
+        self.raid_marker_opacity_ = opacity
+
+        self.raid_styled_ = True
+        return self
+            
     def flood(self, below_activations=1):
         assert below_activations >= 0, "The `below_activations` must be a non-negative number."
 
@@ -42,6 +61,35 @@ class Pond:
         if self.verb: print(f"Pads with less than {below_activations} activations have been flooded.")
 
         return self
+
+    def attract(self, data_normal):
+        self.attract_winmap_ = self.basin.som.win_map(data_normal)
+
+        self.attracted_ = True
+        if self.verb: print("Pond has attracted natural inhabitants.")
+
+        return self
+    
+    def raid(self, data_abnormal):
+        self.raid_winmap_ = self.basin.som.win_map(data_abnormal)
+
+        self.raided_ = True
+        if self.verb: print("Pond has been raided.")
+
+        return self
+    
+    def clean_attract_raid(self):
+        if hasattr(self, "attract_winmap_"): del self.attract_winmap_
+        if hasattr(self, "raid_winmap_"): del self.raid_winmap_
+        if hasattr(self, "attracted_"): del self.attracted_
+        if hasattr(self, "raided_"): del self.raided_
+
+        # TODO: clean styling?
+
+        if self.verb: print("Pond has been cleaned from attraction and raid.")
+
+        return self
+
     
     def observe(self, title=None, ax=None):
         if ax is None:
@@ -96,6 +144,20 @@ class Pond:
                 if mask_2d[i, j]:
                     self.__place_petals(j, i, hitmap[i, j], pixel_width, ax, opacity=self.underwater_opacity_)
 
+        # attract layer
+        if hasattr(self, "attracted_"):
+            for (x, y), points in self.attract_winmap_.items():
+                ax.scatter(y, x,
+                           color=self.attract_marker_color_, s=self.attract_marker_size_base_ * len(points), marker=self.attract_marker_marker_,
+                           alpha=self.attract_marker_opacity_, zorder=10)
+
+        # raid layer
+        if hasattr(self, "raided_"):
+            for (x, y), points in self.raid_winmap_.items():
+                ax.scatter(y, x,
+                           color=self.raid_marker_color_, s=self.raid_marker_size_base_ * len(points), marker=self.raid_marker_marker_,
+                           alpha=self.raid_marker_opacity_, zorder=11)
+
         plt.show()
 
         if self.verb: print(f"Pond is visualized.")
@@ -144,3 +206,7 @@ class Pond:
             self.style_petal()
         if not hasattr(self, "flood_styled_") or self.flood_styled_ is False:
             self.style_flood()
+        if not hasattr(self, "attract_styled_") or self.attract_styled_ is False:
+            self.style_attract()
+        if not hasattr(self, "raid_styled_") or self.raid_styled_ is False:
+            self.style_raid()
