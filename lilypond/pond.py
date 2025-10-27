@@ -66,16 +66,16 @@ class Pond:
 
         return self
 
-    def attract(self, data_normal):
-        self.attract_winmap_ = self.basin.som.win_map(data_normal)
+    def attract(self, data):
+        self.attract_winmap_ = self.basin.som.win_map(data)
 
         self.attracted_ = True
-        if self.verb: print("Pond has attracted natural inhabitants.")
+        if self.verb: print("Pond has attracted.")
 
         return self
     
-    def raid(self, data_abnormal):
-        self.raid_winmap_ = self.basin.som.win_map(data_abnormal)
+    def raid(self, data):
+        self.raid_winmap_ = self.basin.som.win_map(data)
 
         self.raided_ = True
         if self.verb: print("Pond has been raided.")
@@ -94,7 +94,6 @@ class Pond:
 
         return self
 
-    
     def observe(self, title=None, ax=None):
         if ax is None:
             ax = plt.gca()
@@ -197,6 +196,10 @@ class Pond:
         plt.show()
 
         if self.verb: print(f"Pond is visualized.")
+
+    def aerial(self):
+        from lilypond.aerial import Aerial
+        return Aerial(self, self.verb)
     
     def __calc_pixel_width(self, backgroundImg, ax):
         backgroundImgXMin, backgroundImgXMax, _, _ = backgroundImg.get_extent()
