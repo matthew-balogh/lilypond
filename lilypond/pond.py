@@ -1,6 +1,9 @@
 import numpy as np
 import matplotlib.pylab as plt
 
+from typing import Literal
+from matplotlib.colors import LinearSegmentedColormap
+
 from lilypond.basin import Basin
 
 class Pond:
@@ -11,9 +14,10 @@ class Pond:
 
         if self.verb: print("Pond has been initialized.")
 
-    def style_pad(self, gap=.25, marker="8"):
+    def style_pad(self, gap=.25, marker="8", coloring:Literal["constant", "gradient"]="constant"):
         self.pad_gap_ = gap
         self.pad_marker_ = marker
+        self.pad_coloring_ = coloring
 
         self.pad_styled_ = True
         return self
@@ -120,10 +124,36 @@ class Pond:
 
         flood_mask = hitmap.T.flatten() >= self.flood_below_activations_
 
+        pad_scatter_kwargs = {"marker": self.pad_marker_}
+
+        if self.pad_coloring_ == "gradient":
+            pad_colors_cmap = LinearSegmentedColormap.from_list("PondGreens", [
+                (0.05, 0.15, 0.05),   # dark
+                (0.15, 0.35, 0.15),   # natural
+                (0.25, 0.55, 0.25),   # medium seagree
+                (0.35, 0.7, 0.35),    # lighter
+                (0.45, 0.85, 0.45)    # subtle soft
+            ], N=256)
+            pad_colors = distmap.T.flatten()
+            pad_colors_norm = plt.Normalize(vmin=distmap.min(), vmax=distmap.max())
+            
+            pad_scatter_kwargs.update({
+                "cmap": pad_colors_cmap,
+                "norm": pad_colors_norm
+            })
+        else:
+            pad_scatter_kwargs["color"] = "mediumseagreen"
+
         ## unflooded pads
         mask = flood_mask.copy()
         marker_sizes_filt = marker_sizes.T.flatten()[mask]
-        ax.scatter(x_coords[mask], y_coords[mask], color="mediumseagreen", s=marker_sizes_filt, alpha=1, marker=self.pad_marker_)
+
+        if self.pad_coloring_ == "gradient":
+            pad_scatter_kwargs.update({
+                "c": pad_colors[mask]
+            })
+        
+        ax.scatter(x_coords[mask], y_coords[mask], s=marker_sizes_filt, alpha=1, **pad_scatter_kwargs)
 
         ### respective petals
         mask_2d = mask.reshape(hitmap.T.shape).T
@@ -135,7 +165,13 @@ class Pond:
         ## flooded pads
         mask = ~flood_mask.copy()
         marker_sizes_filt = marker_sizes.T.flatten()[mask]
-        ax.scatter(x_coords[mask], y_coords[mask], color="mediumseagreen", s=marker_sizes_filt, alpha=self.underwater_opacity_, marker=self.pad_marker_)
+
+        if self.pad_coloring_ == "gradient":
+            pad_scatter_kwargs.update({
+                "c": pad_colors[mask]
+            })
+
+        ax.scatter(x_coords[mask], y_coords[mask], s=marker_sizes_filt, alpha=self.underwater_opacity_, **pad_scatter_kwargs)
 
         ### respective petals
         mask_2d = mask.reshape(hitmap.T.shape).T
