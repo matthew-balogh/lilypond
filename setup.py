@@ -13,6 +13,7 @@ setup(
         "pytest",
         "numpy",
         "matplotlib",
+        "plotly",
         "minisom",
     ],
     license='Apache 2.0',
