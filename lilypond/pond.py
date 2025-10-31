@@ -94,7 +94,7 @@ class Pond:
 
         return self
 
-    def observe(self, title=None, ax=None):
+    def observe(self, return_fig=False, title=None, ax=None):
         if ax is None:
             ax = plt.gca()
         
@@ -193,9 +193,12 @@ class Pond:
                            color=self.raid_marker_color_, s=self.raid_marker_size_base_ * len(points), marker=self.raid_marker_marker_,
                            alpha=self.raid_marker_opacity_, zorder=11)
 
-        plt.show()
-
-        if self.verb: print(f"Pond is visualized.")
+        if return_fig:
+            if self.verb: print(f"Pond figure is retrieved.")
+            return ax.figure
+        else:
+            if self.verb: print(f"Pond is visualized.")
+            plt.show()
 
     def aerial(self):
         from lilypond.aerial import Aerial
