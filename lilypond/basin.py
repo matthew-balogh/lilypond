@@ -4,9 +4,10 @@ from matplotlib.colors import ListedColormap
 
 class Basin:
 
-    def __init__(self, som: MiniSom, data, verb=False):
+    def __init__(self, som: MiniSom, data, random_seed=None, verb=False):
         self.som = som
         self.data = data
+        self.random_seed = random_seed
         self.verb = verb
 
         if self.verb: print("Basin has been initialized.")

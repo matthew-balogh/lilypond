@@ -4,6 +4,7 @@ import matplotlib.patches as patches
 
 from typing import Literal
 from matplotlib.colors import LinearSegmentedColormap
+from sklearn.preprocessing import KBinsDiscretizer
 
 from lilypond.basin import Basin
 
@@ -130,6 +131,11 @@ class Pond:
         if petals_aggregated:
             hitmap_petal = self.__aggregate_hitmap(hitmap, patch_size=self.petal_agg_patch_size_, method=self.petal_agg_method_)
 
+        hit_discretizer = KBinsDiscretizer(strategy="uniform", encode="ordinal", random_state=self.basin.random_seed)
+        hitmap_petal_discretized = hit_discretizer.fit_transform(hitmap_petal.reshape(-1, 1))
+        hitmap_petal_discretized += 1
+        hitmap_petal_discretized = hitmap_petal_discretized.reshape(hitmap_petal.shape)
+
         marker_sizes = self.__calc_marker_sizes(distmap, pixel_width_points)
         x_coords = np.repeat(np.arange(self.basin.cols_), self.basin.rows_)
         y_coords = np.tile(np.arange(self.basin.rows_), self.basin.cols_)
@@ -188,7 +194,7 @@ class Pond:
                     else:
                         cx, cy = j, i
 
-                    self.__place_petals(cx, cy, hitmap_petal[i, j], pixel_width, ax)
+                    self.__place_petals(cx, cy, hitmap_petal_discretized[i, j], pixel_width, ax)
 
         ## flooded pads
         mask = ~flood_mask_pad.copy()
@@ -214,7 +220,7 @@ class Pond:
                     else:
                         cx, cy = j, i
 
-                    self.__place_petals(cx, cy, hitmap_petal[i, j], pixel_width, ax, opacity=self.underwater_opacity_)
+                    self.__place_petals(cx, cy, hitmap_petal_discretized[i, j], pixel_width, ax, opacity=self.underwater_opacity_)
 
         # attract layer
         if hasattr(self, "attracted_"):
@@ -280,14 +286,14 @@ class Pond:
         marker_sizes = min_marker_size + inverse_normalized_distances * (max_marker_size - min_marker_size)
         return marker_sizes
 
-    def __place_petals(self, cx, cy, hit_num, pixel_width, ax, opacity=1):
-        if hit_num == 0:
+    def __place_petals(self, cx, cy, count, pixel_width, ax, opacity=1):
+        if count == 0:
             return
 
-        hit_num = int(hit_num * self.petal_magnifier_)
+        count = int(count * self.petal_magnifier_)
         max_diameter_fraction = 1 - 2 * self.petal_gap_
         length = (pixel_width / 2) * max_diameter_fraction
-        angles = np.linspace(0, 360, hit_num, endpoint=False)
+        angles = np.linspace(0, 360, count, endpoint=False)
 
         for angle in angles:
             rad = np.radians(angle)
