@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pylab as plt
+import matplotlib.patches as patches
 
 from typing import Literal
 from matplotlib.colors import LinearSegmentedColormap
@@ -55,7 +56,14 @@ class Pond:
 
         self.raid_styled_ = True
         return self
-            
+    
+    def aggregate_petals(self, patch_size=(2, 2), method:Literal["sum", "mean"]="sum"):
+        self.petal_agg_patch_size_ = patch_size
+        self.petal_agg_method_ = method
+        
+        self.petal_aggregated_ = True
+        return self
+
     def flood(self, below_activations=1):
         assert below_activations >= 0, "The `below_activations` must be a non-negative number."
 
@@ -116,14 +124,27 @@ class Pond:
 
         distmap = self.basin.distmap_
         hitmap = self.basin.hitmap_
+        hitmap_petal = hitmap.copy()
+        petals_aggregated = hasattr(self, "petal_aggregated_") and self.petal_aggregated_
+
+        if petals_aggregated:
+            hitmap_petal = self.__aggregate_hitmap(hitmap, patch_size=self.petal_agg_patch_size_, method=self.petal_agg_method_)
 
         marker_sizes = self.__calc_marker_sizes(distmap, pixel_width_points)
         x_coords = np.repeat(np.arange(self.basin.cols_), self.basin.rows_)
         y_coords = np.tile(np.arange(self.basin.rows_), self.basin.cols_)
 
-        flood_mask = hitmap.T.flatten() >= self.flood_below_activations_
+        flood_mask_pad = hitmap.T.flatten() >= self.flood_below_activations_
+        flood_mask_petal = hitmap_petal.T.flatten() >= self.flood_below_activations_
 
         pad_scatter_kwargs = {"marker": self.pad_marker_}
+
+        if petals_aggregated:
+            bh, bw = self.petal_agg_patch_size_
+            if (bh + bw) > 2:
+                for (i, j) in np.ndindex(hitmap_petal.shape):
+                    rect = patches.Rectangle((j * bh, i * bw), bw-1, bh-1, linewidth=2, edgecolor='grey', facecolor='none', zorder=0, alpha=.6)
+                    ax.add_patch(rect)
 
         if self.pad_coloring_ == "gradient":
             pad_colors_cmap = LinearSegmentedColormap.from_list("PondGreens", [
@@ -144,7 +165,7 @@ class Pond:
             pad_scatter_kwargs["color"] = "mediumseagreen"
 
         ## unflooded pads
-        mask = flood_mask.copy()
+        mask = flood_mask_pad.copy()
         marker_sizes_filt = marker_sizes.T.flatten()[mask]
 
         if self.pad_coloring_ == "gradient":
@@ -155,14 +176,22 @@ class Pond:
         ax.scatter(x_coords[mask], y_coords[mask], s=marker_sizes_filt, alpha=1, **pad_scatter_kwargs)
 
         ### respective petals
-        mask_2d = mask.reshape(hitmap.T.shape).T
+        mask_petal = flood_mask_petal.copy()
+        mask_2d = mask_petal.reshape(hitmap_petal.T.shape).T
         if not self.hide_petals_:
-            for i, j in np.ndindex(hitmap.shape):
+            for i, j in np.ndindex(hitmap_petal.shape):
                 if mask_2d[i, j]:
-                    self.__place_petals(j, i, hitmap[i, j], pixel_width, ax)
+                    if petals_aggregated:
+                        bh, bw = self.petal_agg_patch_size_
+                        cx = np.mean([j * bh, (j + 1) * bh - 1])
+                        cy = np.mean([i * bw, (i + 1) * bw - 1])
+                    else:
+                        cx, cy = j, i
+
+                    self.__place_petals(cx, cy, hitmap_petal[i, j], pixel_width, ax)
 
         ## flooded pads
-        mask = ~flood_mask.copy()
+        mask = ~flood_mask_pad.copy()
         marker_sizes_filt = marker_sizes.T.flatten()[mask]
 
         if self.pad_coloring_ == "gradient":
@@ -173,11 +202,19 @@ class Pond:
         ax.scatter(x_coords[mask], y_coords[mask], s=marker_sizes_filt, alpha=self.underwater_opacity_, **pad_scatter_kwargs)
 
         ### respective petals
-        mask_2d = mask.reshape(hitmap.T.shape).T
+        mask_petal = ~flood_mask_petal.copy()
+        mask_2d = mask_petal.reshape(hitmap_petal.T.shape).T
         if not self.hide_petals_:
-            for i, j in np.ndindex(hitmap.shape):
+            for i, j in np.ndindex(hitmap_petal.shape):
                 if mask_2d[i, j]:
-                    self.__place_petals(j, i, hitmap[i, j], pixel_width, ax, opacity=self.underwater_opacity_)
+                    if petals_aggregated:
+                        bh, bw = self.petal_agg_patch_size_
+                        cx = np.mean([j * bh, (j + 1) * bh - 1])
+                        cy = np.mean([i * bw, (i + 1) * bw - 1])
+                    else:
+                        cx, cy = j, i
+
+                    self.__place_petals(cx, cy, hitmap_petal[i, j], pixel_width, ax, opacity=self.underwater_opacity_)
 
         # attract layer
         if hasattr(self, "attracted_"):
@@ -203,6 +240,28 @@ class Pond:
     def aerial(self):
         from lilypond.aerial import Aerial
         return Aerial(self, self.verb)
+    
+
+    def __aggregate_hitmap(self, hitmap, patch_size=(5,5), method:Literal["sum", "mean"]="sum"):
+        matrix = hitmap.copy()
+
+        h, w = matrix.shape
+        bh, bw = patch_size
+        
+        if h % bh != 0 or w % bw != 0:
+            raise ValueError(f"Matrix shape {matrix.shape} is not divisible by block shape {patch_size}")
+        
+        H, W = h // bh, w // bw
+        matrix = matrix[:H*bh, :W*bw]  # crop to fit exact blocks
+        blocks = matrix.reshape(H, bh, W, bw).swapaxes(1,2).reshape(-1, bh, bw)
+
+        if method == "sum":
+            agg = np.array([b.sum() for b in blocks]).reshape(int(h / bh), int(w / bw))
+        elif method == "mean":
+            agg = np.array([b.mean() for b in blocks]).reshape(int(h / bh), int(w / bw))
+        else: raise NotImplementedError(f"Aggregation method \"{method}\" is not supported.")
+
+        return agg
     
     def __calc_pixel_width(self, backgroundImg, ax):
         backgroundImgXMin, backgroundImgXMax, _, _ = backgroundImg.get_extent()
