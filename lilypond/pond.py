@@ -24,10 +24,11 @@ class Pond:
         self.pad_styled_ = True
         return self
     
-    def style_petal(self, color="white", magnifier=3, width=1, gap=.25, hide=False):
+    def style_petal(self, color="white", magnifier=3, width=1, size_base=None, gap=.25, hide=False):
         self.petal_color_ = color
         self.petal_magnifier_ = magnifier
         self.petal_width_ = width
+        self.petal_size_base_ = size_base
         self.petal_gap_ = gap
         self.hide_petals_ = hide
 
@@ -289,10 +290,12 @@ class Pond:
     def __place_petals(self, cx, cy, count, pixel_width, ax, opacity=1):
         if count == 0:
             return
+        
+        size_base = self.petal_size_base_ if self.petal_size_base_ is not None else (pixel_width / 2)
 
         count = int(count * self.petal_magnifier_)
         max_diameter_fraction = 1 - 2 * self.petal_gap_
-        length = (pixel_width / 2) * max_diameter_fraction
+        length = size_base * max_diameter_fraction
         angles = np.linspace(0, 360, count, endpoint=False)
 
         for angle in angles:
