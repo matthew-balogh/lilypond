@@ -65,6 +65,12 @@ class Pond:
         
         self.petal_aggregated_ = True
         return self
+    
+    def discretize_petals(self, n_bins=10):
+        self.petal_disc_n_bins_ = n_bins
+
+        self.petal_discretized_ = True
+        return self
 
     def flood(self, below_activations=1):
         assert below_activations >= 0, "The `below_activations` must be a non-negative number."
@@ -128,14 +134,19 @@ class Pond:
         hitmap = self.basin.hitmap_
         hitmap_petal = hitmap.copy()
         petals_aggregated = hasattr(self, "petal_aggregated_") and self.petal_aggregated_
+        petals_discretized = hasattr(self, "petal_discretized_") and self.petal_discretized_
 
         if petals_aggregated:
             hitmap_petal = self.__aggregate_hitmap(hitmap, patch_size=self.petal_agg_patch_size_, method=self.petal_agg_method_)
 
-        hit_discretizer = KBinsDiscretizer(strategy="uniform", encode="ordinal", random_state=self.basin.random_seed)
-        hitmap_petal_discretized = hit_discretizer.fit_transform(hitmap_petal.reshape(-1, 1))
-        hitmap_petal_discretized += 1
-        hitmap_petal_discretized = hitmap_petal_discretized.reshape(hitmap_petal.shape)
+        hitmap_petal_transformed = hitmap_petal.copy()
+
+        if petals_discretized:
+            mask_positive = hitmap_petal > 0
+            hit_discretizer = KBinsDiscretizer(n_bins=self.petal_disc_n_bins_, strategy="uniform", encode="ordinal", random_state=self.basin.random_seed)
+            hitmap_petal_transformed[mask_positive] = hit_discretizer.fit_transform(hitmap_petal[mask_positive].reshape(-1, 1)).ravel()
+            hitmap_petal_transformed[mask_positive] += 1
+            hitmap_petal_transformed = hitmap_petal_transformed.reshape(hitmap_petal.shape)
 
         marker_sizes = self.__calc_marker_sizes(distmap, pixel_width_points)
         x_coords = np.repeat(np.arange(self.basin.cols_), self.basin.rows_)
@@ -195,7 +206,7 @@ class Pond:
                     else:
                         cx, cy = j, i
 
-                    self.__place_petals(cx, cy, hitmap_petal_discretized[i, j], pixel_width, ax)
+                    self.__place_petals(cx, cy, hitmap_petal_transformed[i, j], pixel_width, ax)
 
         ## flooded pads
         mask = ~flood_mask_pad.copy()
@@ -221,7 +232,7 @@ class Pond:
                     else:
                         cx, cy = j, i
 
-                    self.__place_petals(cx, cy, hitmap_petal_discretized[i, j], pixel_width, ax, opacity=self.underwater_opacity_)
+                    self.__place_petals(cx, cy, hitmap_petal_transformed[i, j], pixel_width, ax, opacity=self.underwater_opacity_)
 
         # attract layer
         if hasattr(self, "attracted_"):
