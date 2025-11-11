@@ -1,12 +1,14 @@
 import numpy as np
 import plotly.graph_objects as go
 
+from typing import Optional
 from lilypond.pond import Pond
 
 class Aerial():
 
-    def __init__(self, pond: Pond, verb=False):
+    def __init__(self, pond: Pond, subsample: Optional[float] = None, verb=False):
         self.pond = pond
+        self.subsample = subsample
         self.verb = verb
 
         if self.verb: print("Aerial has been initialized.")
@@ -50,6 +52,11 @@ class Aerial():
         return self
     
     def observe(self, pond_cmap="Viridis_r", pond_showscale=False, pond_opacity=.75, return_fig=True):
+        rng = np.random.default_rng(self.pond.basin.random_seed)
+        lmbd_n_sample = lambda v: min(len(v), max(1, int(len(v) * self.subsample)))
+
+        if (self.subsample is not None) and (not (0 < self.subsample < 1)):
+            raise ValueError("Parameter `subsample` must be in the range (0, 1).")
 
         # ensure style
         self.__style()
@@ -73,9 +80,14 @@ class Aerial():
 
         # Attract points (normal)
         if hasattr(self, "data_attract_") and len(self.data_attract_) > 0:
-
             bmu_x, bmu_y, bmu_dist = [], [], []
             winmap_normal = som.win_map(self.data_attract_)
+
+            if self.subsample is not None:
+                winmap_normal = {
+                    k: rng.choice(v, size=lmbd_n_sample(v), replace=False).tolist()
+                    for k, v in winmap_normal.items() if len(v) > 0
+                }
 
             for (i, j), val_list in winmap_normal.items():
                 for val in val_list:
@@ -102,9 +114,14 @@ class Aerial():
 
         # Raid points (abnormal)
         if hasattr(self, "data_raid_") and len(self.data_raid_) > 0:
-
             bmu_x, bmu_y, bmu_dist = [], [], []
             winmap_abnormal = som.win_map(self.data_raid_)
+
+            if self.subsample is not None:
+                winmap_abnormal = {
+                    k: rng.choice(v, size=lmbd_n_sample(v), replace=False).tolist()
+                    for k, v in winmap_abnormal.items() if len(v) > 0
+                }
 
             for (i, j), val_list in winmap_abnormal.items():
                 for val in val_list:

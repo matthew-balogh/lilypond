@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pylab as plt
 import matplotlib.patches as patches
 
-from typing import Literal
+from typing import Literal, Optional
 from matplotlib.colors import LinearSegmentedColormap
 from sklearn.preprocessing import KBinsDiscretizer
 
@@ -255,9 +255,9 @@ class Pond:
             if self.verb: print(f"Pond is visualized.")
             plt.show()
 
-    def aerial(self):
+    def aerial(self, subsample: Optional[float] = None):
         from lilypond.aerial import Aerial
-        return Aerial(self, self.verb)
+        return Aerial(self, subsample, self.verb)
     
 
     def __aggregate_hitmap(self, hitmap, patch_size=(5,5), method:Literal["sum", "mean"]="sum"):
