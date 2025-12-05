@@ -15,12 +15,15 @@ class Basin:
     def prepare(self, neighbor_distance_scaling: Literal["sum", "mean"]="mean"):
         hitmap = self.som.activation_response(self.data).astype(int)
         distmap = self.som.distance_map(scaling=neighbor_distance_scaling)
+        node_weights = self.som.get_weights()
         lattice_shape = hitmap.shape
 
         self.hitmap_ = hitmap
         self.distmap_ = distmap
+        self.node_weights_ = node_weights
         self.lattice_shape_ = lattice_shape
         self.rows_, self.cols_ = lattice_shape
+        self.component_size_ = node_weights.shape[2]
 
         self.cmapWaterBlue_ = ListedColormap(['royalblue'])
 
