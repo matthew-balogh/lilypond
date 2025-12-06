@@ -40,24 +40,6 @@ class Pond:
         self.flood_styled_ = True
         return self
     
-    def style_attract(self, marker="3", size_base=15, color="black", opacity=.9):
-        self.attract_marker_marker_ = marker
-        self.attract_marker_size_base_ = size_base
-        self.attract_marker_color_ = color
-        self.attract_marker_opacity_ = opacity
-
-        self.attract_styled_ = True
-        return self
-
-    def style_raid(self, marker="^", size_base=15, color="black", opacity=.9):
-        self.raid_marker_marker_ = marker
-        self.raid_marker_size_base_ = size_base
-        self.raid_marker_color_ = color
-        self.raid_marker_opacity_ = opacity
-
-        self.raid_styled_ = True
-        return self
-    
     def set_coloring_strategy(self, strategy:Literal["uniform", "distance_map", "component_map"]="uniform", component_idx=None):
         self.pad_coloring_strategy_ = strategy
         self.pad_coloring_component_idx_ = component_idx
@@ -88,31 +70,44 @@ class Pond:
 
         return self
 
-    def attract(self, data):
-        self.attract_winmap_ = self.basin.som.win_map(data)
+    def attract(self, data, apply_style:Literal["normal", "abnormal", None]=None,
+                 marker="3", size_base=15, color="black", opacity=.9, zorder=10, label=None):
+        if not hasattr(self, "attract_winmaps_"):
+            self.attract_winmaps_ = []
+        if not hasattr(self, "attract_markers_"):
+            self.attract_markers_ = []
+
+        self.attract_winmaps_.append(self.basin.som.win_map(data))
+
+        attract_marker = {
+            "marker": marker,
+            "size_base": size_base,
+            "color": color,
+            "opacity": opacity,
+            "zorder": zorder,
+            "label": label,
+        }
+
+        if apply_style == "normal":
+            attract_marker.update({"color": "blue", "marker": "3"})
+        elif apply_style == "abnormal":
+            attract_marker.update({"color": "red", "marker": "^"})
+
+        self.attract_markers_.append(attract_marker)
 
         self.attracted_ = True
         if self.verb: print("Pond has attracted.")
 
         return self
     
-    def raid(self, data):
-        self.raid_winmap_ = self.basin.som.win_map(data)
-
-        self.raided_ = True
-        if self.verb: print("Pond has been raided.")
-
-        return self
-    
-    def clean_attract_raid(self):
-        if hasattr(self, "attract_winmap_"): del self.attract_winmap_
-        if hasattr(self, "raid_winmap_"): del self.raid_winmap_
+    def clean_attract(self):
+        if hasattr(self, "attract_winmaps_"): del self.attract_winmap_
+        if hasattr(self, "attract_markers_"): del self.attract_markers_
         if hasattr(self, "attracted_"): del self.attracted_
-        if hasattr(self, "raided_"): del self.raided_
 
         # TODO: clean styling?
 
-        if self.verb: print("Pond has been cleaned from attraction and raid.")
+        if self.verb: print("Pond has been cleaned from attraction.")
 
         return self
 
@@ -212,7 +207,7 @@ class Pond:
                 "c": pad_colors[mask]
             })
         
-        ax.scatter(x_coords[mask], y_coords[mask], s=marker_sizes_filt, alpha=1, **pad_scatter_kwargs)
+        ax.scatter(x_coords[mask], y_coords[mask], s=marker_sizes_filt, alpha=1, **pad_scatter_kwargs, label="pad")
 
         ### respective petals
         mask_petal = flood_mask_petal.copy()
@@ -238,7 +233,7 @@ class Pond:
                 "c": pad_colors[mask]
             })
 
-        ax.scatter(x_coords[mask], y_coords[mask], s=marker_sizes_filt, alpha=self.underwater_opacity_, **pad_scatter_kwargs)
+        ax.scatter(x_coords[mask], y_coords[mask], s=marker_sizes_filt, alpha=self.underwater_opacity_, **pad_scatter_kwargs, label="pad (flooded)")
 
         ### respective petals
         mask_petal = ~flood_mask_petal.copy()
@@ -257,17 +252,20 @@ class Pond:
 
         # attract layer
         if hasattr(self, "attracted_"):
-            for (x, y), points in self.attract_winmap_.items():
-                ax.scatter(y, x,
-                           color=self.attract_marker_color_, s=self.attract_marker_size_base_ * len(points), marker=self.attract_marker_marker_,
-                           alpha=self.attract_marker_opacity_, zorder=10)
-
-        # raid layer
-        if hasattr(self, "raided_"):
-            for (x, y), points in self.raid_winmap_.items():
-                ax.scatter(y, x,
-                           color=self.raid_marker_color_, s=self.raid_marker_size_base_ * len(points), marker=self.raid_marker_marker_,
-                           alpha=self.raid_marker_opacity_, zorder=11)
+            for attr_wm, attr_m in zip(self.attract_winmaps_, self.attract_markers_):
+                for attr_wm_idx, ((x, y), points) in enumerate(attr_wm.items()):
+                    attr_m_label = attr_m["label"] if attr_wm_idx == 0 else "_nolegend_"
+                    ax.scatter(y, x,
+                            color=attr_m["color"], s=attr_m["size_base"] * len(points), marker=attr_m["marker"],
+                            alpha=attr_m["opacity"], zorder=attr_m["zorder"], label=attr_m_label)
+        
+        ax.legend(
+            loc="upper center",
+            bbox_to_anchor=(0.5, -0.12),
+            labelspacing=1.5,
+            handleheight=1.5,
+            ncol=3,
+        )
 
         if return_fig:
             if self.verb: print(f"Pond figure is retrieved.")
@@ -348,7 +346,3 @@ class Pond:
             self.style_petal()
         if not hasattr(self, "flood_styled_") or self.flood_styled_ is False:
             self.style_flood()
-        if not hasattr(self, "attract_styled_") or self.attract_styled_ is False:
-            self.style_attract()
-        if not hasattr(self, "raid_styled_") or self.raid_styled_ is False:
-            self.style_raid()
