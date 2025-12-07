@@ -4,7 +4,11 @@ import matplotlib.patches as patches
 
 from typing import Literal, Optional
 from matplotlib.colors import LinearSegmentedColormap
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from sklearn.preprocessing import KBinsDiscretizer
+
+from matplotlib.cm import ScalarMappable
+from matplotlib.colors import Normalize
 
 from lilypond.basin import Basin
 
@@ -71,7 +75,7 @@ class Pond:
         return self
 
     def attract(self, data, apply_style:Literal["normal", "abnormal", None]=None,
-                 marker="3", size_base=15, color="black", opacity=.9, zorder=10, label=None):
+                 marker="3", size_base=15, color=None, cmap="coolwarm", opacity=.9, zorder=10, label=None):
         if not hasattr(self, "attract_winmaps_"):
             self.attract_winmaps_ = []
         if not hasattr(self, "attract_markers_"):
@@ -83,6 +87,7 @@ class Pond:
             "marker": marker,
             "size_base": size_base,
             "color": color,
+            "cmap": cmap,
             "opacity": opacity,
             "zorder": zorder,
             "label": label,
@@ -101,7 +106,7 @@ class Pond:
         return self
     
     def clean_attract(self):
-        if hasattr(self, "attract_winmaps_"): del self.attract_winmap_
+        if hasattr(self, "attract_winmaps_"): del self.attract_winmaps_
         if hasattr(self, "attract_markers_"): del self.attract_markers_
         if hasattr(self, "attracted_"): del self.attracted_
 
@@ -170,7 +175,6 @@ class Pond:
                     ax.add_patch(rect)
 
         if self.pad_coloring_strategy_ != "uniform":
-            print(self.pad_coloring_strategy_)
             if self.pad_coloring_strategy_ == "distance_map":
                 pad_colors_cmap = LinearSegmentedColormap.from_list("PondGreens", [
                     (0.05, 0.15, 0.05),   # dark
@@ -252,20 +256,58 @@ class Pond:
 
         # attract layer
         if hasattr(self, "attracted_"):
-            for attr_wm, attr_m in zip(self.attract_winmaps_, self.attract_markers_):
+            fig = ax.figure
+            all_axes = fig.get_axes()
+            n_axes = len(all_axes)
+            ax_idx = all_axes.index(ax)
+
+            if not hasattr(fig, "_pond_gridspec"):
+                gs = fig.add_gridspec(len(self.attract_winmaps_) + 1, n_axes, height_ratios=np.hstack(([1], np.repeat(.03, len(self.attract_winmaps_)))), width_ratios=np.repeat(1, n_axes))
+                fig._pond_gridspec = gs
+            
+            gs = fig._pond_gridspec
+
+            for attr_i, (attr_wm, attr_m) in enumerate(zip(self.attract_winmaps_, self.attract_markers_)):
+                all_points = np.vstack([points for (x, y), points in attr_wm.items()])
+                all_values = np.linalg.norm(all_points - self.basin.som.quantization(all_points), axis=1)
+                cmap = plt.get_cmap(attr_m["cmap"])
+                norm = Normalize(vmin=all_values.min(), vmax=all_values.max())
+
                 for attr_wm_idx, ((x, y), points) in enumerate(attr_wm.items()):
                     attr_m_label = attr_m["label"] if attr_wm_idx == 0 else "_nolegend_"
-                    ax.scatter(y, x,
-                            color=attr_m["color"], s=attr_m["size_base"] * len(points), marker=attr_m["marker"],
-                            alpha=attr_m["opacity"], zorder=attr_m["zorder"], label=attr_m_label)
+                    jitter_amount = .5
+                    values = np.linalg.norm(points - self.basin.som.quantization(points), axis=1)
+
+                    if attr_m["color"] is not None:
+                        ax.scatter(
+                                y + (np.random.rand(len(points)) - .5) * jitter_amount,
+                                x + (np.random.rand(len(points)) - .5) * jitter_amount,
+                                color=attr_m["color"],
+                                s=attr_m["size_base"], marker=attr_m["marker"],
+                                alpha=attr_m["opacity"], zorder=attr_m["zorder"], label=attr_m_label)
+                    else:
+                        ax.scatter(
+                                y + (np.random.rand(len(points)) - .5) * jitter_amount,
+                                x + (np.random.rand(len(points)) - .5) * jitter_amount,
+                                c=values,
+                                cmap=cmap,
+                                norm=norm,
+                                s=attr_m["size_base"], marker=attr_m["marker"],
+                                alpha=attr_m["opacity"], zorder=attr_m["zorder"], label=attr_m_label)
+                    
+                    
+                    if attr_m["color"] is None:
+                        cax = fig.add_subplot(gs[attr_i + 1, ax_idx])
+                        plt.colorbar(ScalarMappable(norm=norm, cmap=cmap), orientation="horizontal", cax=cax, ax=ax) \
+                            .set_label(f"Distance to BMU ({attr_m['label']})")
         
-        ax.legend(
+        """ ax.legend(
             loc="upper center",
             bbox_to_anchor=(0.5, -0.12),
             labelspacing=1.5,
-            handleheight=1.5,
+            borderpad=1.5,
             ncol=3,
-        )
+        ) """
 
         if return_fig:
             if self.verb: print(f"Pond figure is retrieved.")
