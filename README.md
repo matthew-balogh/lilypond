@@ -25,7 +25,7 @@ along with providing a user-friendly _configuration_ and _styling_ interface alo
 ## How to use
 
 ```bash
-pip install git+https://github.com/matthew-balogh/lilypond
+pip install git+https://github.com/matthew-balogh/lilypond@experimental
 ```
 
 ```python
