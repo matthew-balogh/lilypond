@@ -296,10 +296,10 @@ class Pond:
                                 alpha=attr_m["opacity"], zorder=attr_m["zorder"], label=attr_m_label)
                     
                     
-                    if attr_m["color"] is None:
-                        cax = fig.add_subplot(gs[attr_i + 1, ax_idx])
-                        plt.colorbar(ScalarMappable(norm=norm, cmap=cmap), orientation="horizontal", cax=cax, ax=ax) \
-                            .set_label(f"Distance to BMU ({attr_m['label']})")
+                if attr_m["color"] is None:
+                    cax = fig.add_subplot(gs[attr_i + 1, ax_idx])
+                    plt.colorbar(ScalarMappable(norm=norm, cmap=cmap), orientation="horizontal", cax=cax, ax=ax) \
+                        .set_label(f"Distance to BMU ({attr_m['label']})")
         
         """ ax.legend(
             loc="upper center",
