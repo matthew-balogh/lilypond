@@ -10,11 +10,25 @@ Given a high-dimensional dataset at hand. We may want to visualize the data poin
 
 Python implementation of SOM such as [MiniSom](https://github.com/JustGlowing/minisom) already exist, yet have limitations. First, they only use colors to display the neighboring distance information between nodes. This makes sparse regions appear as consecutive clusters since sharing similar colors. Also, the human eye may find it hard to interpret different colors as distance properly. Moreover, the original concept and the implementations suggest two plots for displaying the distance and activation information separately, which calls for a cross-referencing making it even more challenging to interpret the SOM map. Moreover, these libraries call for manual construction of the plots and often generate boilerplate or non-reusable code.
 
+
+## Learning a representation of the dataset via SOM
+
+<img width="1489" height="378" alt="image" src="https://github.com/user-attachments/assets/4739184a-d31d-4508-963a-30d662bef2ae" />
+
+When it comes to a high-dimensional dataset, the convergence can be inspected in the Principal Component space.
+
+<img width="989" height="319" alt="image" src="https://github.com/user-attachments/assets/25f00fe2-beff-460a-9758-edeb3fc3e3eb" />
+
+<img width="758" height="616" alt="image" src="https://github.com/user-attachments/assets/d429caf3-7bf4-49b2-8722-1c200ec17057" />
+
+<img width="864" height="372" alt="image" src="https://github.com/user-attachments/assets/d5e4818c-7236-4852-8d99-a48e9193ea87" />
+
+
 ## Solution
 
-<img width="1181" height="487" alt="Comparison of traditional SOM visuals and lilypond" src="https://github.com/user-attachments/assets/65879725-6768-4114-b584-3377ef0dbf20" />
+<img width="416" height="435" alt="image" src="https://github.com/user-attachments/assets/c1c6ff94-eb80-43da-a08f-b91cfe60d7e6" />
 
-As the rightmost plot of the above figure shows, *lilypond* **combines** the *hitmap* and *distance map* into a **single, familiar and easily interpretable visual**, where:
+As the plot shows, *lilypond* **combines** the *hitmap* and *distance map* into a **single, familiar and easily interpretable visual**, where:
 
 * water is a static blue background
 * lily pads shrink according to how **far** they are located **from their neighbors**
