@@ -185,6 +185,30 @@ class Pond:
 
         return self
 
+    def see_rhizome(self, X=None, ax=None):
+        if X is None:
+            X = self.basin.data.copy()
+
+        if ax is None:
+            ax = plt.gca()
+
+        b2mu_inds = np.argsort(self.basin.som._distance_from_weights(X), axis=1)[:, :2]
+        b2my_xy = np.unravel_index(b2mu_inds, self.basin.som._weights.shape[:2])
+        b2mu_x, b2mu_y = b2my_xy[0], b2my_xy[1]
+
+        for i in range(len(b2mu_x)):
+            x1, y1 = b2mu_x[i, 0], b2mu_y[i, 0]
+            x2, y2 = b2mu_x[i, 1], b2mu_y[i, 1]
+
+            ax.plot([y1, y2], [x1, x2], color="k", alpha=.5)
+            ax.scatter(y1, x1, s=30, color="black", marker="o", alpha=0.9)
+            ax.scatter(y2, x2, s=100, color="darkgrey", marker="3", alpha=0.9)
+
+        self.rhyzome_added_ = True
+        if self.verb: print("Rhizome has been added.")
+        
+        return self
+
     def observe(self, return_fig=False, title=None, ax=None):
         if ax is None:
             ax = plt.gca()
