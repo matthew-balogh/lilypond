@@ -2,10 +2,13 @@ import numpy as np
 import matplotlib.pylab as plt
 import matplotlib.patches as patches
 
-from typing import Literal, Optional
+from typing import Literal, Optional, Union
+from numpy.typing import ArrayLike
+
 from matplotlib.colors import LinearSegmentedColormap
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from sklearn.preprocessing import KBinsDiscretizer
+from sklearn.cluster import KMeans
 
 from matplotlib.cm import ScalarMappable
 from matplotlib.colors import Normalize
@@ -74,14 +77,73 @@ class Pond:
 
         return self
 
-    def attract(self, data, apply_style:Literal["normal", "abnormal", None]=None,
-                 marker="3", size_base=15, color=None, cmap="coolwarm", opacity=.9, zorder=10, label=None):
+    def attract(self, data,
+                apply_style:Literal["normal", "abnormal", None]=None,
+                marker="3", size_base=15,
+                color=None, cmap="coolwarm", cmap_values:Union[Literal["bmu-distance"], ArrayLike]="bmu-distance",
+                opacity=.9, zorder=10, label=None,
+                subsample_ratio: Optional[float] = None):
+
+        if (subsample_ratio is not None) and (not (0 < subsample_ratio < 1)):
+            raise ValueError("Parameter `subsample` must be in the range (0, 1).")
+
         if not hasattr(self, "attract_winmaps_"):
             self.attract_winmaps_ = []
+        if not hasattr(self, "attract_winmaps_idx_"):
+            self.attract_winmaps_idx_ = []
         if not hasattr(self, "attract_markers_"):
             self.attract_markers_ = []
+        if not hasattr(self, "attract_cmap_values_"):
+            self.attract_cmap_values_ = []
 
-        self.attract_winmaps_.append(self.basin.som.win_map(data))
+        attr_wm = self.basin.som.win_map(data)
+        attr_wm_idx = self.basin.som.win_map(data, return_indices=True)
+
+        if subsample_ratio is not None:
+            for (((x, y), points), ((_, _), points_idx)) in zip(attr_wm.items(), attr_wm_idx.items()):
+                points = np.array(points)
+                points_idx = np.array(points_idx)
+
+                num_cluster = min(len(points), 3)
+                km = KMeans(n_clusters=num_cluster, n_init=10, random_state=self.basin.random_seed)
+                km.fit(points)
+
+                labels = km.labels_
+                unique_labels = np.unique(labels)
+
+                sampled_points = []
+                sampled_points_idx = []
+
+                # sample per local cluster
+                rng = np.random.default_rng(self.basin.random_seed)
+
+                for lbl in unique_labels:
+                    cluster_points = points[labels == lbl]
+                    cluster_points_idx = points_idx[labels == lbl]
+
+                    k = int(subsample_ratio * len(cluster_points))
+                    k = max(1, k)
+
+                    # if cluster smaller than k, just take all
+                    if len(cluster_points) <= k:
+                        chosen = cluster_points
+                        chosen_idx = cluster_points_idx
+                    else:
+                        idx = rng.choice(len(cluster_points), size=k, replace=False)
+                        chosen = cluster_points[idx]
+                        chosen_idx = cluster_points_idx[idx]
+
+                    sampled_points.append(chosen)
+                    sampled_points_idx.append(chosen_idx)
+
+                points_sampled = np.vstack(sampled_points)
+                points_idx_sampled = np.hstack(sampled_points_idx)
+
+                attr_wm_idx[(x, y)] = points_idx_sampled
+                attr_wm[(x, y)] = points_sampled
+
+        self.attract_winmaps_.append(attr_wm)
+        self.attract_winmaps_idx_.append(attr_wm_idx)
 
         attract_marker = {
             "marker": marker,
@@ -99,6 +161,13 @@ class Pond:
             attract_marker.update({"color": "red", "marker": "^"})
 
         self.attract_markers_.append(attract_marker)
+
+        if cmap is not None:
+            if isinstance(cmap_values, str) and cmap_values == "bmu-distance":
+                dist_values = np.linalg.norm(data - self.basin.som.quantization(data), axis=1)
+                self.attract_cmap_values_.append(dist_values)
+            elif cmap_values is not None:
+                self.attract_cmap_values_.append(np.asarray(cmap_values).copy())
 
         self.attracted_ = True
         if self.verb: print("Pond has attracted.")
@@ -267,16 +336,15 @@ class Pond:
             
             gs = fig._pond_gridspec
 
-            for attr_i, (attr_wm, attr_m) in enumerate(zip(self.attract_winmaps_, self.attract_markers_)):
-                all_points = np.vstack([points for (x, y), points in attr_wm.items()])
-                all_values = np.linalg.norm(all_points - self.basin.som.quantization(all_points), axis=1)
+            for attr_i, (attr_wm, attr_wm_idx, attr_m, attr_cmap_values) in enumerate(zip(self.attract_winmaps_, self.attract_winmaps_idx_, self.attract_markers_, self.attract_cmap_values_)):
                 cmap = plt.get_cmap(attr_m["cmap"])
-                norm = Normalize(vmin=all_values.min(), vmax=all_values.max())
+                norm = Normalize(vmin=attr_cmap_values.min(), vmax=attr_cmap_values.max())
 
-                for attr_wm_idx, ((x, y), points) in enumerate(attr_wm.items()):
-                    attr_m_label = attr_m["label"] if attr_wm_idx == 0 else "_nolegend_"
+                for attr_wm_i, (((x, y), points), ((_, _), points_idx)) in enumerate(zip(attr_wm.items(), attr_wm_idx.items())):
+                    attr_m_label = attr_m["label"] if attr_wm_i == 0 else "_nolegend_"
                     jitter_amount = .5
-                    values = np.linalg.norm(points - self.basin.som.quantization(points), axis=1)
+
+                    values = attr_cmap_values[points_idx]
 
                     if attr_m["color"] is not None:
                         ax.scatter(
