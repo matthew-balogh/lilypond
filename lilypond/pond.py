@@ -89,8 +89,8 @@ class Pond:
 
     def attract(self, data,
                 apply_style:Literal["normal", "abnormal", None]=None,
-                marker="3", size_base=15,
-                color=None, cmap="coolwarm", cmap_values:Union[Literal["bmu-distance"], ArrayLike]="bmu-distance",
+                marker="3", size_base=15, color=None,
+                cmap="coolwarm", cmap_values:Union[Literal["bmu-distance"], ArrayLike]="bmu-distance", cmap_vmin=None, cmap_vmax=None, cmap_label=None,
                 opacity=.9, zorder=10, label=None,
                 subsample_ratio: Optional[float] = None):
 
@@ -105,6 +105,10 @@ class Pond:
             self.attract_markers_ = []
         if not hasattr(self, "attract_cmap_values_"):
             self.attract_cmap_values_ = []
+        if not hasattr(self, "attract_cmap_labels_"):
+            self.attract_cmap_labels_ = []
+        if not hasattr(self, "attract_cmap_vlimits_"):
+            self.attract_cmap_vlimits_ = []
 
         attr_wm = self.basin.som.win_map(data)
         attr_wm_idx = self.basin.som.win_map(data, return_indices=True)
@@ -176,8 +180,12 @@ class Pond:
             if isinstance(cmap_values, str) and cmap_values == "bmu-distance":
                 dist_values = np.linalg.norm(data - self.basin.som.quantization(data), axis=1)
                 self.attract_cmap_values_.append(dist_values)
+                self.attract_cmap_labels_.append("Distance to BMU")
             elif cmap_values is not None:
                 self.attract_cmap_values_.append(np.asarray(cmap_values).copy())
+                self.attract_cmap_labels_.append(cmap_label)
+            
+            self.attract_cmap_vlimits_.append((cmap_vmin, cmap_vmax))
 
         self.attracted_ = True
         if self.verb: print("Pond has attracted.")
@@ -186,7 +194,9 @@ class Pond:
     
     def clean_attract(self):
         if hasattr(self, "attract_winmaps_"): del self.attract_winmaps_
+        if hasattr(self, "attract_winmaps_idx_"): del self.attract_winmaps_idx_
         if hasattr(self, "attract_markers_"): del self.attract_markers_
+        if hasattr(self, "attract_cmap_values_"): del self.attract_cmap_values_
         if hasattr(self, "attracted_"): del self.attracted_
 
         # TODO: clean styling?
@@ -385,9 +395,12 @@ class Pond:
             
             gs = fig._pond_gridspec
 
-            for attr_i, (attr_wm, attr_wm_idx, attr_m, attr_cmap_values) in enumerate(zip(self.attract_winmaps_, self.attract_winmaps_idx_, self.attract_markers_, self.attract_cmap_values_)):
+            for attr_i, (attr_wm, attr_wm_idx, attr_m, attr_cmap_values, attr_cmap_vlimits, attr_cmap_label) in enumerate(zip(self.attract_winmaps_, self.attract_winmaps_idx_, self.attract_markers_, self.attract_cmap_values_, self.attract_cmap_vlimits_, self.attract_cmap_labels_)):
                 cmap = plt.get_cmap(attr_m["cmap"])
-                norm = Normalize(vmin=attr_cmap_values.min(), vmax=attr_cmap_values.max())
+
+                cmap_vmin = attr_cmap_vlimits[0] if attr_cmap_vlimits[0] is not None else attr_cmap_values.min()
+                cmap_vmax = attr_cmap_vlimits[1] if attr_cmap_vlimits[1] is not None else attr_cmap_values.max()
+                norm = Normalize(vmin=cmap_vmin, vmax=cmap_vmax)
 
                 for attr_wm_i, (((x, y), points), ((_, _), points_idx)) in enumerate(zip(attr_wm.items(), attr_wm_idx.items())):
                     attr_m_label = attr_m["label"] if attr_wm_i == 0 else "_nolegend_"
@@ -415,8 +428,9 @@ class Pond:
                     
                 if attr_m["color"] is None:
                     cax = fig.add_subplot(gs[attr_i + 1, ax_idx])
+
                     plt.colorbar(ScalarMappable(norm=norm, cmap=cmap), orientation="horizontal", cax=cax, ax=ax) \
-                        .set_label(f"Distance to BMU ({attr_m['label']})")
+                        .set_label(f"{attr_cmap_label} ({attr_m['label']})")
         
         """ ax.legend(
             loc="upper center",
