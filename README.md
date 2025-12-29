@@ -74,9 +74,10 @@ basin.pond() \
   .set_coloring_strategy(strategy="component_map", component_idx=feature_idx) \
   .observe(title=f"Feature {feature_idx + 1}")
 ```
-
+<!--
 ## More on *lilypond*
 
 *Lilypond* was inspired by water lilies as they cover a pond of water, with both dense and sparse regions. Data points projected on the map with different appearances can mimic benefitial and intruding species distinguishing between normal and abnormal phenomena, such as in the field of _novelty_ or _anomaly detection_.
 
 <img width="359" height="426" alt="image" src="https://github.com/user-attachments/assets/bd3a6fb6-e3bc-4ee1-a5f1-56ffba04cfa8" />
+-->
