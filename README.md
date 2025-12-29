@@ -1,4 +1,4 @@
-<img width="425" height="105" alt="Lilypond logo" src="https://github.com/user-attachments/assets/38fe54f2-3b01-4215-a263-57a7205fd8bf" />
+<img width="1780" height="550" alt="Lilypond logo" src="https://github.com/user-attachments/assets/5066cb90-02a3-45df-beef-d9c5b1612a8d" />
 
 # Lilypond
 
