@@ -47,10 +47,11 @@ class Pond:
         self.flood_styled_ = True
         return self
     
-    def style_rhizome(self, linewidth=1, marker_start="o", marker_end="3", opacity=.9, zorder=1):
+    def style_rhizome(self, color="black", linewidth=1, marker_start="o", marker_end="3", opacity=.9, zorder=1):
         self.rhizome_linewidth_ = linewidth
         self.rhizome_marker_start_ = marker_start
         self.rhizome_marker_end_ = marker_end
+        self.rhizome_color_ = color
         self.rhizome_opacity_ = opacity
         self.rhizome_zorder_ = zorder
 
@@ -227,6 +228,12 @@ class Pond:
             t_neigh = 1.42 if neighborhood == "moore" else 1
             show_rhizome = distance > t_neigh
 
+        self.rhizome_b2mu_coords_flat_ = b2mu_inds
+        self.rhizome_b2mu_coords_flat_shown_ = b2mu_inds[show_rhizome] if mode == "violating" else b2mu_inds
+
+        self.rhizome_b2mu_coords_ = np.array(np.unravel_index(b2mu_inds, self.basin.som._weights.shape[:2])).T
+        self.rhizome_b2mu_coords_shown_ = np.array(np.unravel_index(b2mu_inds[show_rhizome], self.basin.som._weights.shape[:2])).T if mode == "violating" else self.rhizome_b2mu_coords_
+
         for i in range(len(b2mu_x)):
 
             if mode == "violating" and not show_rhizome[i]:
@@ -235,9 +242,9 @@ class Pond:
             x1, y1 = b2mu_x[i, 0], b2mu_y[i, 0]
             x2, y2 = b2mu_x[i, 1], b2mu_y[i, 1]
 
-            ax.plot([y1, y2], [x1, x2], color="black", linewidth=self.rhizome_linewidth_, alpha=self.rhizome_opacity_, zorder=self.rhizome_zorder_)
-            ax.scatter(y1, x1, s=50, color="black", marker=self.rhizome_marker_start_, alpha=self.rhizome_opacity_, zorder=self.rhizome_zorder_)
-            ax.scatter(y2, x2, s=100, color="black", marker=self.rhizome_marker_end_, alpha=self.rhizome_opacity_, zorder=self.rhizome_zorder_)
+            ax.plot([y1, y2], [x1, x2], color=self.rhizome_color_, linewidth=self.rhizome_linewidth_, alpha=self.rhizome_opacity_, zorder=self.rhizome_zorder_)
+            ax.scatter(y1, x1, s=50, color=self.rhizome_color_, marker=self.rhizome_marker_start_, alpha=self.rhizome_opacity_, zorder=self.rhizome_zorder_)
+            ax.scatter(y2, x2, s=100, color=self.rhizome_color_, marker=self.rhizome_marker_end_, alpha=self.rhizome_opacity_, zorder=self.rhizome_zorder_)
 
         self.rhyzome_added_ = True
         if self.verb: print("Rhizome has been added.")
