@@ -454,11 +454,6 @@ class Pond:
             if self.verb: print(f"Pond is visualized.")
             plt.show()
 
-    def aerial(self, subsample: Optional[float] = None):
-        from lilypond.aerial import Aerial
-        return Aerial(self, subsample, self.verb)
-    
-
     def __aggregate_hitmap(self, hitmap, patch_size=(5,5), method:Literal["sum", "mean"]="sum"):
         matrix = hitmap.copy()
 
