@@ -78,7 +78,12 @@ class Pond:
         self.petal_discretized_ = True
         return self
 
-    def flood(self, below_activations=1):
+    def flood(self, below_activations:Union[int, Literal["auto"]]=1):
+        if below_activations == "auto":
+            below_activations = self.__calc_bmu_min_activation()
+        else:
+            below_activations = int(below_activations)
+
         assert below_activations >= 0, "The `below_activations` must be a non-negative number."
 
         self.flood_below_activations_ = below_activations
@@ -491,6 +496,16 @@ class Pond:
         max_marker_size = (pixel_width_points * max_diameter_fraction) ** 2
         marker_sizes = min_marker_size + inverse_normalized_distances * (max_marker_size - min_marker_size)
         return marker_sizes
+    
+    def __calc_bmu_min_activation(self):
+        activations = self.basin.hitmap_
+        acts = activations.ravel()
+        acts_sorted = np.sort(acts)[::-1]
+        cs = np.cumsum(acts_sorted)
+        thr = acts_sorted[np.searchsorted(cs, 0.9 * cs[-1])]
+        min_activation = thr
+
+        return min_activation
 
     def __place_petals(self, cx, cy, count, pixel_width, ax, opacity=1):
         if count == 0:
