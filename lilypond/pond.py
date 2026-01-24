@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pylab as plt
 import matplotlib.patches as patches
 
+from collections import Counter
 from typing import Literal, Optional, Union
 from numpy.typing import ArrayLike
 
@@ -222,6 +223,7 @@ class Pond:
         if not hasattr(self, "rhizome_styled_") or self.rhizome_styled_ is False:
             self.style_rhizome()
 
+        # b2mu: best 2 matching units
         b2mu_inds = np.argsort(self.basin.som._distance_from_weights(X), axis=1)[:, :2]
         b2my_xy = np.unravel_index(b2mu_inds, self.basin.som._weights.shape[:2])
         b2mu_x, b2mu_y = b2my_xy[0], b2my_xy[1]
@@ -233,23 +235,33 @@ class Pond:
             t_neigh = 1.42 if neighborhood == "moore" else 1
             show_rhizome = distance > t_neigh
 
+        X_idx = np.arange(len(X))
+        self.rhizome_affected_data_points_idx_ = X_idx[show_rhizome] if mode == "violating" else X_idx
+
         self.rhizome_b2mu_coords_flat_ = b2mu_inds
         self.rhizome_b2mu_coords_flat_shown_ = b2mu_inds[show_rhizome] if mode == "violating" else b2mu_inds
 
         self.rhizome_b2mu_coords_ = np.array(np.unravel_index(b2mu_inds, self.basin.som._weights.shape[:2])).T
         self.rhizome_b2mu_coords_shown_ = np.array(np.unravel_index(b2mu_inds[show_rhizome], self.basin.som._weights.shape[:2])).T if mode == "violating" else self.rhizome_b2mu_coords_
 
-        for i in range(len(b2mu_x)):
+        counter = Counter()
 
+        for i in range(len(b2mu_x)):
             if mode == "violating" and not show_rhizome[i]:
                 continue
 
             x1, y1 = b2mu_x[i, 0], b2mu_y[i, 0]
             x2, y2 = b2mu_x[i, 1], b2mu_y[i, 1]
+            connection = tuple([(x1, y1), (x2, y2)])
+            counter[connection] += 1
 
-            ax.plot([y1, y2], [x1, x2], color=self.rhizome_color_, linewidth=self.rhizome_linewidth_, alpha=self.rhizome_opacity_, zorder=self.rhizome_zorder_)
-            ax.scatter(y1, x1, s=50, color=self.rhizome_color_, marker=self.rhizome_marker_start_, alpha=self.rhizome_opacity_, zorder=self.rhizome_zorder_)
-            ax.scatter(y2, x2, s=100, color=self.rhizome_color_, marker=self.rhizome_marker_end_, alpha=self.rhizome_opacity_, zorder=self.rhizome_zorder_)
+        for (pt_A, pt_B), freq in counter.items():
+            x_coords = [pt_A[0], pt_B[0]]
+            y_coords = [pt_A[1], pt_B[1]]
+
+            ax.plot(y_coords, x_coords, linewidth=self.rhizome_linewidth_ * freq, color=self.rhizome_color_, alpha=self.rhizome_opacity_, zorder=self.rhizome_zorder_)
+            ax.scatter(y_coords[0], x_coords[0], s=50, color=self.rhizome_color_, marker=self.rhizome_marker_start_, alpha=self.rhizome_opacity_, zorder=self.rhizome_zorder_)
+            ax.scatter(y_coords[1], x_coords[1], s=100, color=self.rhizome_color_, marker=self.rhizome_marker_end_, alpha=self.rhizome_opacity_, zorder=self.rhizome_zorder_)
 
         self.rhyzome_added_ = True
         if self.verb: print("Rhizome has been added.")
