@@ -26,7 +26,7 @@ As the figure shows, *lilypond* **combines** the distance and hit maps into a **
 ## How to use
 
 ```bash
-pip install git+https://github.com/matthew-balogh/lilypond@experimental
+pip install git+https://github.com/matthew-balogh/lilypond
 ```
 
 ```python
@@ -61,6 +61,7 @@ basin.pond() \
   .set_coloring_strategy(strategy="component_map", component_idx=feature_idx) \
   .observe(title=f"Feature {feature_idx + 1}")
 ```
+
 <!--
 ## More on *lilypond*
 
