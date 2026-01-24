@@ -61,7 +61,6 @@ basin.pond() \
   .set_coloring_strategy(strategy="component_map", component_idx=feature_idx) \
   .observe(title=f"Feature {feature_idx + 1}")
 ```
-
 <!--
 ## More on *lilypond*
 
