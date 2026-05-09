@@ -493,13 +493,24 @@ class Pond:
         return agg
     
     def __calc_pixel_width(self, backgroundImg, ax):
-        backgroundImgXMin, backgroundImgXMax, _, _ = backgroundImg.get_extent()
-        pixel_width = (backgroundImgXMax - backgroundImgXMin) / self.basin.rows_
+        backgroundImgXMin, backgroundImgXMax, backgroundImgYMin, backgroundImgYMax = backgroundImg.get_extent()
+        
+        pixel_width_x = (backgroundImgXMax - backgroundImgXMin) / self.basin.cols_
+        pixel_width_y = (backgroundImgYMax - backgroundImgYMin) / self.basin.rows_
+
         ax.figure.canvas.draw()
-        points_data = np.array([[0, 0], [pixel_width, 0]])
-        points_display = ax.transData.transform(points_data)
-        pixel_width_points = points_display[1, 0] - points_display[0, 0]
-        return pixel_width, pixel_width_points
+        
+        points_data_x = np.array([[0, 0], [pixel_width_x, 0]])
+        points_display_x = ax.transData.transform(points_data_x)
+        pixel_width_points_x = points_display_x[1, 0] - points_display_x[0, 0]
+
+        points_data_y = np.array([[0, 0], [0, pixel_width_y]])
+        points_display_y = ax.transData.transform(points_data_y)
+        pixel_width_points_y = points_display_y[1, 1] - points_display_y[0, 1]
+
+        min_pixel_width_points = min(pixel_width_points_x, pixel_width_points_y)
+        
+        return min(pixel_width_x, pixel_width_y), min_pixel_width_points
     
     def __calc_marker_sizes(self, distmap, pixel_width_points):
         inverse_normalized_distances = 1 - (distmap / distmap.max())
