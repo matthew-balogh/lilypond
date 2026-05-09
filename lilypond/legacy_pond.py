@@ -34,10 +34,21 @@ class LegacyPond:
         cax.tick_params(labelsize=11)
         cbar = plt.colorbar(im, cax=cax)
 
-    def visualize(self, cmaps=["Spectral_r", "binary"], title="Traditional visualizations of SOM", figsize=(10, 4)):
+    def visualize(self, cmaps=["Spectral_r", "binary"], title="Traditional visualizations of SOM", figsize=(10, 4), hold_on=False):
         fig, (ax0, ax1) = plt.subplots(1, 2, figsize=figsize)
+
         self.visualize_distance_map(cmap=cmaps[0], ax=ax0)
         self.visualize_hitmap(cmap=cmaps[1], ax=ax1)
+
+        for ax in (ax0, ax1):
+            ax.set_xticks([])
+            ax.set_yticks([])
+
         plt.suptitle(title)
         plt.tight_layout()
-        plt.show()
+
+        if hold_on is False:
+            plt.show()
+            return fig, (ax0, ax1)
+        else:
+            return fig, (ax0, ax1)
