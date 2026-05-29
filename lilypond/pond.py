@@ -24,9 +24,10 @@ class Pond:
 
         if self.verb: print("Pond has been initialized.")
 
-    def style_pad(self, gap=.25, marker="8"):
+    def style_pad(self, gap=.25, marker="8", cmap=None):
         self.pad_gap_ = gap
         self.pad_marker_ = marker
+        self.pad_cmap_ = cmap
 
         self.pad_styled_ = True
         return self
@@ -327,7 +328,9 @@ class Pond:
                     ax.add_patch(rect)
 
         if self.pad_coloring_strategy_ != "uniform":
-            if self.pad_coloring_strategy_ == "distance_map":
+            if self.pad_cmap_ is not None:
+                pad_colors_cmap = self.pad_cmap_
+            elif self.pad_coloring_strategy_ == "distance_map":
                 pad_colors_cmap = LinearSegmentedColormap.from_list("PondGreens", [
                     (0.05, 0.15, 0.05),   # dark
                     (0.15, 0.35, 0.15),   # natural
@@ -335,6 +338,10 @@ class Pond:
                     (0.35, 0.7, 0.35),    # lighter
                     (0.45, 0.85, 0.45)    # subtle soft
                 ], N=256)
+            elif self.pad_coloring_strategy_ == "component_map":
+                pad_colors_cmap = plt.get_cmap("BrBG")
+
+            if self.pad_coloring_strategy_ == "distance_map":
                 pad_colors = distmap.T.flatten()
                 pad_colors_norm = plt.Normalize(vmin=distmap.min(), vmax=distmap.max())
                 
@@ -342,7 +349,6 @@ class Pond:
                 assert self.pad_coloring_component_idx_ is not None, "The component idx must be set when the coloring strategy is set to `component_map`."
                 assert self.pad_coloring_component_idx_ >= 0, "The component idx must be a positive number."
                 assert self.pad_coloring_component_idx_ < self.basin.component_size_, f"The component idx must be smaller than {self.basin.component_size_}."
-                pad_colors_cmap = plt.get_cmap("BrBG")
                 node_weights_fi = self.basin.node_weights_[:, :, self.pad_coloring_component_idx_]
                 pad_colors = node_weights_fi.T.flatten()
                 pad_colors_norm = plt.Normalize(vmin=node_weights_fi.min(), vmax=node_weights_fi.max())
