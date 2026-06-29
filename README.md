@@ -10,7 +10,7 @@ Given a high-dimensional dataset at hand. We may want to visualize the data poin
 
 Python implementation of SOM such as _MiniSom_ already exist, yet have limitations, such as cross-referencing issues due to separate visuals or cluster misinterpretation due to coloring.
 
-<img src="example_exports/demonstration_01.png" />
+<img src="examples/_exports/demonstration_01.png" />
 
 
 ## The Lilypond way
@@ -22,7 +22,7 @@ As the figure shows, *lilypond* **combines** the distance and hit maps into a **
 * number of petals indicate the **activation** strength
 * "roots" (black lines) indicate the connection of the first and second best-matching unit of training instances that could **strengthen clustering patterns** or when connect otherwise non-neighboring nodes **hint** on the **folding nature of the manifold**
 
-<img src="example_exports/demonstration_02.png" />
+<img src="examples/_exports/demonstration_02.png" />
 
 ## Installation and usage
 
