@@ -2,7 +2,7 @@
 
 # Lilypond
 
-*Lilypond* is a visualization tool that leverages _Self-Organizing Maps (SOM)_, via the [MiniSom](https://github.com/JustGlowing/minisom) library, to **make high-dimensional** data **intuitive** and **interpretable** for the human eye.
+*Lilypond* is a `matplotlib`-based Python visualization tool that leverages _Self-Organizing Maps (SOM)_ via the [MiniSom](https://github.com/JustGlowing/minisom) library, to make low-dimensional representation of high-dimensional data more **intuitive**.
 
 ## Motivation
 
@@ -10,20 +10,23 @@ Given a high-dimensional dataset at hand. We may want to visualize the data poin
 
 Python implementation of SOM such as _MiniSom_ already exist, yet have limitations, such as cross-referencing issues due to separate visuals or cluster misinterpretation due to coloring.
 
-<img width="864" height="372" alt="image" src="https://github.com/user-attachments/assets/d5e4818c-7236-4852-8d99-a48e9193ea87" />
+<img src="example_exports/demonstration_01.png" />
 
 
-## The _lilypond way_
+## The Lilypond way
 
-As the figure shows, *lilypond* **combines** the distance and hit maps into a **single, familiar and easily interpretable visual**, where:
+As the figure shows, *lilypond* **combines** the distance and hit maps into a **single** and **familiar visual**, where:
 
 * water is a static blue background
 * lily pads shrink according to how **far** they are located **from their neighbors**
 * number of petals indicate the **activation** strength
+* "roots" (black lines) indicate the connection of the first and second best-matching unit of training instances that could **strengthen clustering patterns** or when connect otherwise non-neighboring nodes **hint** on the **folding nature of the manifold**
 
-<img width="416" height="435" alt="image" src="https://github.com/user-attachments/assets/c1c6ff94-eb80-43da-a08f-b91cfe60d7e6" />
+<img src="example_exports/demonstration_02.png" />
 
-## How to use
+## Installation and usage
+
+The following is a brief look at the interface of Lilypond. For a detailed demonstration, visit the [examples/demonstration.ipynb](./examples/demonstration.ipynb) notebook.
 
 ```bash
 pip install git+https://github.com/matthew-balogh/lilypond
@@ -31,41 +34,78 @@ pip install git+https://github.com/matthew-balogh/lilypond
 
 ```python
 from minisom import MiniSom
+
+# given X, hyperparams -> train a MiniSom object
+som = MiniSom(**hyperparams)
+som.random_weights_init(X)
+som.train(X, ...)
+```
+
+```python
 from lilypond.basin import Basin
 
-# ... given data X
-
-# ... train a MiniSOM object
-som = MiniSom(...)
-
 # prepare the pond
-basin = Basin(som, X, random_seed=42).prepare()
+basin = Basin(som, X, ...).prepare()
 ```
 
 ```python
-# create, configure, style, and visualize the pond
-basin.pond() \
-  .discretize_petals(n_bins=10) \
-  .flood(below_activations=2) \
-  .style_pad(marker="s", gap=.1) \
-  .style_petal(hide=False) \
-  .observe()
+# configure styling
+
+coloring_strategy = "distance_map"
+flood_below_activations = 2
+
+pad_style = {
+  "marker": "s",
+  "gap": .1,
+}
+
+petal_style = {
+  "magnifier": 3,
+  "width": 1.25,
+  "size_base": .4,
+}
+
+rhizome_style = {
+  "zorder": 11,
+  "marker_start": "^",
+  "marker_end": "3",
+  "opacity": .8,
+  "linewidth": 3,
+}
+
+attract_style = {
+  "cmap": cmap, # colormap
+  "cmap_values": y_encoded, # true labels encoded
+  "cmap_label": "Class",
+  "label": "Iris",
+  "zorder": 21,
+  "marker": "^",
+  "size_base": 18,
+  "opacity": .9,
+  "subsample_ratio": None,
+}
 ```
 
 ```python
-# plot the pond with feature wise coloring
-feature_idx = 0
+import matplotlib.pyplot as plt
+
+# visualize distance + activation information
 basin.pond() \
-  .style_pad(marker="s", gap=.1) \
+  .set_coloring_strategy(coloring_strategy) \
+  .flood(below_activations=flood_below_activations) \
+  .discretize_petals(n_bins=5) \
+  .style_pad(**pad_style) \
+  .style_petal(**petal_style) \
+  .observe(title=f"Activations (obscured below {flood_below_activations})")
+
+# visualize 1st/2nd BMU connections + true label information
+basin.pond() \
+  .set_coloring_strategy(coloring_strategy) \
+  .flood(below_activations=0) \
+  .style_pad(**pad_style) \
   .style_petal(hide=True) \
-  .set_coloring_strategy(strategy="component_map", component_idx=feature_idx) \
-  .observe(title=f"Feature {feature_idx + 1}")
+  .style_rhizome(**rhizome_style) \
+  .see_rhizome(mode="all", ax=plt.gca()) \
+  .attract(X, **attract_style) \
+  .observe(title="BMU connections + True labels")
 ```
-
-<!--
-## More on *lilypond*
-
-*Lilypond* was inspired by water lilies as they cover a pond of water, with both dense and sparse regions. Data points projected on the map with different appearances can mimic benefitial and intruding species distinguishing between normal and abnormal phenomena, such as in the field of _novelty_ or _anomaly detection_.
-
-<img width="359" height="426" alt="image" src="https://github.com/user-attachments/assets/bd3a6fb6-e3bc-4ee1-a5f1-56ffba04cfa8" />
--->
