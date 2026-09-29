@@ -1,5 +1,13 @@
 <img width="1780" height="550" alt="Lilypond logo" src="https://github.com/user-attachments/assets/5066cb90-02a3-45df-beef-d9c5b1612a8d" />
 
+---
+
+> [!CAUTION]
+> **Future Developments**  
+> Active development has moved to [**ophelia-rnd/lilypond**](https://github.com/ophelia-rnd/lilypond). Please check out the new repository for the latest updates, issues, and releases!
+
+---
+
 # Lilypond
 
 *Lilypond* is a `matplotlib`-based Python visualization tool that leverages _Self-Organizing Maps (SOM)_ via the [MiniSom](https://github.com/JustGlowing/minisom) library, to make low-dimensional representation of high-dimensional data more **intuitive**.
